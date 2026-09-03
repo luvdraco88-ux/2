@@ -7,7 +7,7 @@ jobs:
   k6_load_test:
     name: Execute k6 Stress Test
     runs-on: ubuntu-latest
-    
+
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
@@ -15,17 +15,16 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Setup K6 Performance Testing Tool
+    - name: Setup k6 (official APT repo)
+      id: setup-k6
       run: |
-        sudo mkdir -p /root/.gnupg
-        sudo chmod 700 /root/.gnupg
-        sudo apt-get update
-        sudo apt-get install -y gnupg dirmngr ca-certificates curl tar
-        
-        # Download k6 trực tiếp từ GitHub releases
-        curl -L https://github.com/grafana/k6/releases/download/v0.53.0/k6-v0.53.0-linux-amd64.tar.gz -o k6.tar.gz
-        tar xzf k6.tar.gz
-        sudo mv k6-v0.53.0-linux-amd64/k6 /usr/local/bin/
+        sudo apt-get update -y
+        sudo apt-get install -y gnupg2 curl ca-certificates apt-transport-https
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/k6.gpg
+        echo "deb [signed-by=/etc/apt/keyrings/k6.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update -y
+        sudo apt-get install -y k6
         k6 version
 
     - name: Auto Generate Test Script File
@@ -44,23 +43,28 @@ jobs:
           },
         };
 
-        const TOKEN = '05%2F7JlwSPGyw9zyLckWuhme1c4JqGT6pX1uSy1Ld66Ks0lsEnAmzaCPfHRaGMMhBj60RAomzqNVXQVdkJ%2FvGpaVowpSvKddd%2BBH0saRmaSfpII9yKGTouYzJkIX3r5OeMYWNimHnDfCophfzoCZZd634dab%2FvlFiVoMR3[...]
+        // Use an environment variable for the token (set via GitHub Secrets)
+        const TOKEN = __ENV.TOKEN || '';
 
         export default function () {
           try {
-            const res1 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
+            // Example endpoint usage — replace query param/key as needed
+            const res1 = http.get(`https://apiquadautayshelby.vip?token=${TOKEN}`);
             check(res1, { 'API OK': (r) => r.status === 200 || r.status === 401 });
 
-            const res2 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
+            const res2 = http.get(`https://apiquadautayshelby.vip/another-endpoint?token=${TOKEN}`);
             check(res2, { 'New Hub OK': (r) => r.status !== 0 });
 
-            const res3 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
+            const res3 = http.get(`https://apiquadautayshelby.vip/old-endpoint?token=${TOKEN}`);
             check(res3, { 'Old Hub OK': (r) => r.status !== 0 });
           } catch (err) {
+            // optional: console.error(err);
           }
-          sleep(0.05); 
+          sleep(0.05);
         }
         EOF
 
     - name: Run k6 Performance Test
+      env:
+        TOKEN: ${{ secrets.API_TOKEN }}
       run: k6 run load_test_run.js
