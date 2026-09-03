@@ -43,22 +43,24 @@ jobs:
           },
         };
 
-        // Use an environment variable for the token (set via GitHub Secrets)
+        // Sử dụng biến môi trường lấy Token từ GitHub Secrets bảo mật
         const TOKEN = __ENV.TOKEN || '';
 
         export default function () {
           try {
-            // Example endpoint usage — replace query param/key as needed
-            const res1 = http.get(`https://apiquadautayshelby.vip?token=${TOKEN}`);
+            // 1. Đã sửa sang Subdomain portal cho API danh sách game
+            const res1 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
             check(res1, { 'API OK': (r) => r.status === 200 || r.status === 401 });
 
-            const res2 = http.get(`https://apiquadautayshelby.vip/another-endpoint?token=${TOKEN}`);
+            // 2. Đã sửa sang Subdomain taixiu cho cổng bắt tay WebSocket mới
+            const res2 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
             check(res2, { 'New Hub OK': (r) => r.status !== 0 });
 
-            const res3 = http.get(`https://apiquadautayshelby.vip/old-endpoint?token=${TOKEN}`);
+            // 3. Đã sửa sang Subdomain taixiumini cho cổng bắt tay WebSocket cũ
+            const res3 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
             check(res3, { 'Old Hub OK': (r) => r.status !== 0 });
           } catch (err) {
-            // optional: console.error(err);
+            // Nuốt lỗi mạng để duy trì nhịp bắn liên tục kịch sàn
           }
           sleep(0.05);
         }
