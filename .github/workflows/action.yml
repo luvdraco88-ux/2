@@ -1,7 +1,7 @@
 name: K6 Peak Load Testing
 
 on:
-  workflow_dispatch: # Kích hoạt bằng tay từ giao diện Web GitHub
+  workflow_dispatch:
 
 jobs:
   k6_load_test:
@@ -15,19 +15,18 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Setup K6 Performance Testing Tool (Sửa lỗi GPG)
+    - name: Setup K6 Performance Testing Tool
       run: |
-        # Sửa lỗi thiếu thư mục gpg và dirmngr trên máy chủ Ubuntu của GitHub
         sudo mkdir -p /root/.gnupg
         sudo chmod 700 /root/.gnupg
         sudo apt-get update
-        sudo apt-get install -y gnupg dirmngr ca-certificates
+        sudo apt-get install -y gnupg dirmngr ca-certificates curl tar
         
-        # Tiến hành cài đặt k6 chuẩn hóa
-        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://k6.io stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-        sudo apt-get update
-        sudo apt-get install -y k6
+        # Download k6 trực tiếp từ GitHub releases
+        curl -L https://github.com/grafana/k6/releases/download/v0.53.0/k6-v0.53.0-linux-amd64.tar.gz -o k6.tar.gz
+        tar xzf k6.tar.gz
+        sudo mv k6-v0.53.0-linux-amd64/k6 /usr/local/bin/
+        k6 version
 
     - name: Auto Generate Test Script File
       run: |
@@ -39,13 +38,13 @@ jobs:
           scenarios: {
             github_peak_flood: {
               executor: 'constant-vus',
-              vus: 3000,                // Ép cứng 3.000 người dùng ảo từ máy chủ GitHub
-              duration: '5h30m',        // Chạy liên tục 5 tiếng 30 phút
+              vus: 3000,
+              duration: '5h30m',
             },
           },
         };
 
-        const TOKEN = '05%2F7JlwSPGyw9zyLckWuhme1c4JqGT6pX1uSy1Ld66Ks0lsEnAmzaCPfHRaGMMhBj60RAomzqNVXQVdkJ%2FvGpaVowpSvKddd%2BBH0saRmaSfpII9yKGTouYzJkIX3r5OeMYWNimHnDfCophfzoCZZd634dab%2FvlFiVoMR3hDON8eKj8IAj3saw11dQOTZtiWa2pIyfnvizdXa3ZMpzjvZQZ4MZdYtJ5Kv%2FTR62yUfVNfAKuz6sPgOP7c6YndWVNK1nBOWGeV3QeGFde7BYqF4jjKnXMM%2BTde79%2FcNnVPSVQyOthFft6QiJOs75gGveb8oVN23gAVXLf%2B8WMun5ZmkQQ%3D%3D.79d5031f8b5c0a7602fef3a2fb61859e40f8aa46a81495dcfa50f8ebe04e280b';
+        const TOKEN = '05%2F7JlwSPGyw9zyLckWuhme1c4JqGT6pX1uSy1Ld66Ks0lsEnAmzaCPfHRaGMMhBj60RAomzqNVXQVdkJ%2FvGpaVowpSvKddd%2BBH0saRmaSfpII9yKGTouYzJkIX3r5OeMYWNimHnDfCophfzoCZZd634dab%2FvlFiVoMR3[...]
 
         export default function () {
           try {
@@ -58,7 +57,6 @@ jobs:
             const res3 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
             check(res3, { 'Old Hub OK': (r) => r.status !== 0 });
           } catch (err) {
-            // Nuốt lỗi mạng để giữ nhịp bắn liên tục kịch sàn
           }
           sleep(0.05); 
         }
