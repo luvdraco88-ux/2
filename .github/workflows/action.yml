@@ -43,24 +43,22 @@ jobs:
           },
         };
 
-        // Sử dụng biến môi trường lấy Token từ GitHub Secrets bảo mật
+        // Use an environment variable for the token (set via GitHub Secrets)
         const TOKEN = __ENV.TOKEN || '';
 
         export default function () {
           try {
-            // 1. Đã sửa sang Subdomain portal cho API danh sách game
-            const res1 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
+            // Example endpoint usage — replace query param/key as needed
+            const res1 = http.get(`https://apiquadautayshelby.vip?token=${TOKEN}`);
             check(res1, { 'API OK': (r) => r.status === 200 || r.status === 401 });
 
-            // 2. Đã sửa sang Subdomain taixiu cho cổng bắt tay WebSocket mới
-            const res2 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
+            const res2 = http.get(`https://apiquadautayshelby.vip/another-endpoint?token=${TOKEN}`);
             check(res2, { 'New Hub OK': (r) => r.status !== 0 });
 
-            // 3. Đã sửa sang Subdomain taixiumini cho cổng bắt tay WebSocket cũ
-            const res3 = http.get(`https://apiquadautayshelby.vip{TOKEN}`);
+            const res3 = http.get(`https://apiquadautayshelby.vip/old-endpoint?token=${TOKEN}`);
             check(res3, { 'Old Hub OK': (r) => r.status !== 0 });
           } catch (err) {
-            // Nuốt lỗi mạng để duy trì nhịp bắn liên tục kịch sàn
+            console.error('Request error:', err);
           }
           sleep(0.05);
         }
@@ -70,3 +68,10 @@ jobs:
       env:
         TOKEN: ${{ secrets.API_TOKEN }}
       run: k6 run load_test_run.js
+
+    - name: Upload k6 Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: k6-results
+        path: ./load_test_run.js
